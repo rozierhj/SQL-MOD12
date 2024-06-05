@@ -141,6 +141,4 @@ async function createConnectDB(){
     }
 }
 
-
-
 module.exports = {createDB, createConnectDB};
