@@ -20,7 +20,7 @@ function createDB(){
                 return client.query('CREATE DATABASE employee_db');
             })
             .then(()=>{
-                console.log('Created DataBase employee_db');
+                resolve('Created new Database employee_db');
             })
             .catch(err =>{
                 if(err.code === '42P04'){
@@ -32,23 +32,6 @@ function createDB(){
             .finally(()=>{
                 client.end();
             });
-
-    });
-
-}
-function connectDB(){
-
-    return new Promise((resolve, reject)=>{
-        const pool = new Pool(
-            {
-                user:'postgres',
-                password:'rootroot',
-                host: 'localhost',
-                database: 'employee_db'
-            },
-            console.log('Connected to employee_db database')
-        )
-        pool.connect();
 
     });
 
@@ -104,16 +87,15 @@ function createTables(){
         .then(()=>{
             pool.query(employeeTable);
         })
+        .then(()=>{
+            resolve('Tables created');
+        })
         .catch(err=>{
             console.error('sometin went wrong',err);
         })
         .finally(()=>{
             pool.end();
-        });
-
-        
-        
-        
+        });     
 
     });
 
@@ -133,7 +115,6 @@ async function createConnectDB(){
     });
 
     const query = `SELECT 1 FROM pg_database WHERE datname = $1`;
-    let createDB = false;
 
     try{
         await client.connect();
@@ -147,27 +128,19 @@ async function createConnectDB(){
             await createDB();
             console.log('DB creation complete');
         }
-    }
-    catch{
-        console.error('Error in checking',err);
-    }
-    try{
-        await connectDB();
-        console.log('DB Connected');
-    }
-    catch{
-        console.error('DB Already Connected',error.message);
-    }
-    try{
         await createTables();
         console.log('Tables created');
+        
     }
-    catch{
-        console.error('Error',error.message);
+    catch(error){
+        console.error('Error in checking',error.message);
     }
-
+    finally{
+        await client.end();
+        console.log('YA Gone!');
+    }
 }
 
 
 
-module.exports = {createDB, connectDB, createConnectDB};
+module.exports = {createDB, createConnectDB};
