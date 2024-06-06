@@ -12,11 +12,13 @@ function createConnectDB(){
 
     });
 
-    client.connect()
-    .then(()=>{
+    client.connect();
 
-        const query = `SELECT 1 FROM pg_database WHERE datname = employee_db`;
-        const data = client.query(query);
+    const query = `SELECT 1 FROM pg_database WHERE datname = employee_db`;
+    
+    client.query(query)
+    .then((res)=>{
+
         if(data.rowCount > 0){
             console.log('employee_db exists');
             return;
@@ -92,5 +94,6 @@ function createConnectDB(){
     })
     return;
 }
+
 createConnectDB();
 //module.exports = createConnectDB();
