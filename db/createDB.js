@@ -58,4 +58,5 @@ function createTable(){
 
 }
 
-createTable();
+//createTable();
+console.log('why so fast');
