@@ -1,65 +1,71 @@
+const inquirer = require('inquirer');
+const { Client } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
-const {Pool} = require('pg');
+//prep for database
+const client = new Client({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'postgres',
+    password: 'rootroot',
+    post: 5432,
 
-const pool = new Pool(
-    {
-        user:'postgres',
-        password:'rootroot',
-        host: 'localhost',
-        database: 'employee_db'
-    },
-    console.log('Connected to employee_db database')
-)
-
-const dprtTable = `
-INSERT INTO department (name) 
-VALUES 
-('engineering'),
-('supply chain'),
-('accounting'),
-('quality');
-`;
-
-const roleTable = `
-INSERT INTO role (title, salary, department_id) 
-VALUES 
-('cheif engineer', 100,1),
-('shipping person',23,1),
-('accountant',344,1),
-('quality manager',45,1);
-`;
-
-const employeeTable = `
-INSERT INTO employee (first_name, last_name, role_id, manager_id) 
-VALUES 
-('tom','tinker',1,1),
-('sam','smith',1,1),
-('sara','jane',1,1),
-('billy','bob',1,1);
-`;
-
-pool.connect()
-.then(()=>{
-    pool.query(`DELETE FROM employee;`)
-})
-.then(()=>{
-    pool.query(`DELETE FROM role;`)
-})
-.then(()=>{
-    pool.query(`DELETE FROM department;`)
-})
-.then(()=>{
-    pool.query(dprtTable);
-})
-.then(()=>{
-    pool.query(roleTable);
-})
-.then(()=>{
-    pool.query(employeeTable);
-})
-.catch(err=>{
-    console.error('sometin went wrong',err);
-})
-.finally(()=>{
-    pool.end();
 });
+
+//db name
+const dbName = 'business_db';
+
+//preparing db file
+const dbFilePath = path.join(__dirname,'schema.sql');
+const dbTables = fs.readFileSync(dbFilePath, 'utf8');
+
+async function createDatabase(){
+    try{
+
+        await client.connect();
+
+        await client.query(`DROP DATABASE IF EXISTS ${dbName}`);
+
+        await client.query(`CREATE DATABASE ${dbName}`);
+
+    }catch(err){
+        console.error(err);
+    }
+    finally{
+        await client.end();
+    }
+}
+
+async function createTables(){
+
+    const dbClient = new Client({
+        user: 'postgres',
+        host: 'localhost',
+        database: 'business_db',
+        password: 'rootroot',
+        port: 5432,
+    });
+
+    try{
+
+        await dbClient.connect();
+
+        await dbClient.query(dbTables);
+
+    }
+    catch(err){
+        console.error(err);
+    }
+    finally{
+        await dbClient.end();
+    }
+
+}
+
+async function seed(){
+    await createDatabase();
+    await createTables();
+}
+
+seed();
