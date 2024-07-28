@@ -1,4 +1,27 @@
 const inquirer = require('inquirer');
+const { Client } = require('pg');
+
+const client = new Client({
+    user: 'postgres',
+    host:'localhost',
+    database:'business_db',
+    password:'rootroot',
+    port:5432,
+});
+
+async function displayDepartments(){
+    try{
+
+        await client.connect();
+
+        const departments = await client.query('SELECT * FROM departments');
+        console.table(departments.rows);
+
+    }
+    catch(err){
+        console.error(err);
+    }
+}
 
 const userChoice = [
     {
@@ -18,13 +41,17 @@ const userChoice = [
     }
 ];
 
-function userInput(){
+async function userInput(){
 
-    inquirer.prompt(userChoice).then(answers =>{
-    
+    try{
+
+        const answers = await inquirer.prompt(userChoice);
+
         switch(answers.choice){
             case 'view all departments':
-                console.log('view all departments chosen');
+
+                await displayDepartments();
+
                 break;
             case 'view all roles':
                 console.log('view all roles chosen');
@@ -45,11 +72,17 @@ function userInput(){
                 console.log('update an employee role chosen');
                 break;
             case 'close':
-                console.log('application closed');
-                return;
+                await client.end();
+                process.exit();
+                
         }
-    userInput();
-    })
+
+    }
+    catch(err){
+        console.error(err);
+    }
+    
+    await userInput();
 
 }
 

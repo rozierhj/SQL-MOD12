@@ -1,62 +1,71 @@
+const inquirer = require('inquirer');
 const { Client } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
-function createDB(){
-
+//prep for database
 const client = new Client({
     user: 'postgres',
     host: 'localhost',
+    database: 'postgres',
     password: 'rootroot',
-    port: 5432,
+    post: 5432,
+
 });
 
-client.connect();
+//db name
+const dbName = 'business_db';
 
-const createDB = 'CREATE DATABASE employee_db';
+//preparing db file
+const dbFilePath = path.join(__dirname,'schema.sql');
+const dbTables = fs.readFileSync(dbFilePath, 'utf8');
 
-client.query(createDB, (err, res) =>{
-    if(err){
-        console.error('bad',err);
-    }else{
-        console.log('we did it');
+async function createDatabase(){
+    try{
+
+        await client.connect();
+
+        await client.query(`DROP DATABASE IF EXISTS ${dbName}`);
+
+        await client.query(`CREATE DATABASE ${dbName}`);
+
+    }catch(err){
+        console.error(err);
     }
-    client.end();
-});
-
+    finally{
+        await client.end();
+    }
 }
 
-function createTable(){
+async function createTables(){
 
-    const client = new Client({
-        user:'postgres',
-        host:'localhost',
-        database: 'employee_db',
+    const dbClient = new Client({
+        user: 'postgres',
+        host: 'localhost',
+        database: 'business_db',
         password: 'rootroot',
-        port: '5432',
+        port: 5432,
     });
 
-    client.connect();
+    try{
 
-    const createTableQR = `
+        await dbClient.connect();
 
-        CREATE TABLE employee (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(30),
-            email VARCHAR(50) UNIQUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-        )
-    `;
+        await dbClient.query(dbTables);
 
-    client.query(createTableQR, (err, res) =>{
-        if(err){
-            console.error('bad',err);
-        }else{
-            console.log('good');
-        }
-
-        client.end();
-    });
+    }
+    catch(err){
+        console.error(err);
+    }
+    finally{
+        await dbClient.end();
+    }
 
 }
 
-//createTable();
-console.log('why so fast');
+async function create(){
+    await createDatabase();
+    await createTables();
+}
+
+create();

@@ -1,7 +1,3 @@
--- DROP DATABASE IF EXISTS business_db;
--- CREATE DATABASE business_db;
-
--- \c business_db;
 
 CREATE TABLE departments (
   id SERIAL PRIMARY KEY,

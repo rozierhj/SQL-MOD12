@@ -1,35 +1,34 @@
-const inquirer = require('inquirer');
-const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
+const {Client} = require('pg');
 
-//prep for database
 const client = new Client({
+
     user: 'postgres',
     host: 'localhost',
-    database: 'postgres',
+    database: 'business_db',
     password: 'rootroot',
-    post: 5432,
+    port: 5432,
 
 });
 
-//db name
-const dbName = 'business_db';
+const departments = [
+    'Supply Chain',
+    'Purchasing',
+    'Accounting',
+    'Process Engineering',
+    'Product Engineering'
+];
 
-//preparing db file
-const dbFilePath = path.join(__dirname,'schema.sql');
-const dbTables = fs.readFileSync(dbFilePath, 'utf8');
-
-async function createDatabase(){
+async function seedDepartments(){
     try{
 
         await client.connect();
 
-        await client.query(`DROP DATABASE IF EXISTS ${dbName}`);
-
-        await client.query(`CREATE DATABASE ${dbName}`);
-
-    }catch(err){
+        for (const department of departments){
+            const query = 'INSERT INTO departments (name) VALUES ($1)';
+            await client.query(query,[department]);
+        }
+    }
+    catch(err){
         console.error(err);
     }
     finally{
@@ -37,35 +36,4 @@ async function createDatabase(){
     }
 }
 
-async function createTables(){
-
-    const dbClient = new Client({
-        user: 'postgres',
-        host: 'localhost',
-        database: 'business_db',
-        password: 'rootroot',
-        port: 5432,
-    });
-
-    try{
-
-        await dbClient.connect();
-
-        await dbClient.query(dbTables);
-
-    }
-    catch(err){
-        console.error(err);
-    }
-    finally{
-        await dbClient.end();
-    }
-
-}
-
-async function seed(){
-    await createDatabase();
-    await createTables();
-}
-
-seed();
+seedDepartments();
