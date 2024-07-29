@@ -122,46 +122,13 @@ async function userInput(){
                 break;
             case 'add a role':
                 
-            const newRole = await inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'roleName',
-                    message: 'Enter the new role name: '
-                }
-            ]);
-
-            const {roleName} = newRole;
-
-            const newSalary = await inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'salaryValue',
-                    message: 'Enter the salary: '
-                }
-            ]);
-
-            const {salaryValue} = newSalary;
-
-            const currentDepartments = await getDepartments();
-
-            const chosenDepartment = await departmentPromt(currentDepartments);
-
-            console.log(chosenDepartment.newDepartment);
-
-            const departmentQuery = 'SELECT id FROM departments WHERE name = $1';
-            const departmentRes = await client.query(departmentQuery,[chosenDepartment.newDepartment]);
-
-            const departmentID = departmentRes.rows[0].id;
-
-            const roleQuery = 'INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3) RETURNING *';
-
-            const roleRes = await client.query(roleQuery, [roleName, salaryValue, departmentID]);
-
-            console.log('role added');
-
+                await addNewRole()
 
                 break;
             case 'add an employee':
+
+                await addEmployee();
+
                 console.log('add an employee chosen');
                 break;
             case 'update an employee role':
@@ -198,7 +165,7 @@ async function getDepartments(){
 async function getRoles(){
     try{
         const res = await client.query('SELECT title FROM role');
-        return res.rows.map(row => row.map);
+        return res.rows.map(row => row.title);
     }
     catch(err){
         console.error(err);
@@ -235,17 +202,17 @@ async function employeePromt(employeeNames){
     const answers = await inquirer.prompt(questions);
 }
 
-async function rolePromt(roleNames){
+async function rolePrompt(roleNames){
     const questions = [
         {
             type: 'list',
-            name: 'employee',
-            message: 'Select an employee',
+            name: 'newRole',
+            message: 'Select a role: ',
             choices: roleNames
         }
     ];
 
-    const answers = await inquirer.prompt(questions);
+    return await inquirer.prompt(questions);
 }
 
 async function departmentPromt(departmentNames){
@@ -264,7 +231,103 @@ async function departmentPromt(departmentNames){
 
 async function addNewRole(){
     
+    const newRole = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'roleName',
+            message: 'Enter the new role name: '
+        }
+    ]);
+
+    const {roleName} = newRole;
+
+    const newSalary = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'salaryValue',
+            message: 'Enter the salary: '
+        }
+    ]);
+
+    const {salaryValue} = newSalary;
+
+    const currentDepartments = await getDepartments();
+
+    const chosenDepartment = await departmentPromt(currentDepartments);
+
+    console.log(chosenDepartment.newDepartment);
+
+    const departmentQuery = 'SELECT id FROM departments WHERE name = $1';
+    const departmentRes = await client.query(departmentQuery,[chosenDepartment.newDepartment]);
+
+    const departmentID = departmentRes.rows[0].id;
+
+    const roleQuery = 'INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3) RETURNING *';
+
+    const roleRes = await client.query(roleQuery, [roleName, salaryValue, departmentID]);
+
+    console.log('role added');
+
 }
+
+async function getManagerChoices(){
+    try{
+
+        const res = await client.query('SELECT id, first_name, last_name FROM employee');
+        return res.rows.map(row =>({
+            name: `${row.first_name} ${row.last_name}`,
+            value: row.id
+        }));
+
+    }
+    catch(err){
+        console.error(err);
+    }
+}
+
+async function addEmployee(){
+
+    const answers = await inquirer.prompt([
+        {type:'input',
+        name: 'firstName',
+        message: 'First name: '},
+
+        {type:'input',
+         name:'lastName',
+         message:'Last name: '   
+        }
+
+    ]);
+
+   const {firstName, lastName} = answers;
+
+    const currentRoles = await getRoles();
+    const {newRole} = await rolePrompt(currentRoles);
+
+    const roleQuery = 'SELECT id FROM role WHERE title = $1';
+    const roleRes = await client.query(roleQuery, [newRole]);
+
+    const roleID = roleRes.rows[0].id;
+
+    const managerChoices = await getManagerChoices();
+
+    const managerChosen = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'managerID',
+            message: 'Choose manager: ',
+            choices: managerChoices
+        }
+    ]);
+
+    const {managerID} = managerChosen;
+
+    const employeeQuery = 'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4) RETURNING *';
+
+    await client.query(employeeQuery,[firstName, lastName, roleID, managerID]);
+
+}
+
 async function main(){
     try{
         await client.connect();
