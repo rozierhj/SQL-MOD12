@@ -133,6 +133,26 @@ async function userInput(){
                 break;
             case 'update an employee role':
                 console.log('update an employee role chosen');
+
+                const employeeChoices = await getEmployeeChoices();
+
+                const employeeChosen = await inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'employeeID',
+                        message: 'Choose manager: ',
+                        choices: employeeChoices
+                    }
+                ]);
+            
+                const {employeeID} = employeeChosen;
+
+                const currentRoles = await getRoleID();
+                const {newRole} = await rolePrompt(currentRoles);
+
+                const updateQuery = 'UPDATE employee SET role_id = $1 WHERE id = $2 RETURNING *';
+                const updateRes = await client.query(updateQuery, [newRole, employeeID]);
+
                 break;
             case 'close':
                 await client.end();
@@ -173,21 +193,21 @@ async function getRoles(){
 
 }
 
-async function getEmployees(){
-    try{
+// async function getEmployees(){
+//     try{
 
-        const res = await client.query('SELECT first_name, last_name FROM employee');
+//         const res = await client.query('SELECT first_name, last_name FROM employee');
 
-        return res.rows.map(row => `${row.first_name} ${row.last_name}`);
+//         return res.rows.map(row => `${row.first_name} ${row.last_name}`);
 
-    }
-    catch(err){
-        console.error(err);
-    }
+//     }
+//     catch(err){
+//         console.error(err);
+//     }
     
 
 
-}
+// }
 
 async function employeePromt(employeeNames){
     const questions = [
@@ -270,7 +290,7 @@ async function addNewRole(){
 
 }
 
-async function getManagerChoices(){
+async function getEmployeeChoices(){
     try{
 
         const res = await client.query('SELECT id, first_name, last_name FROM employee');
@@ -309,7 +329,7 @@ async function addEmployee(){
 
     const roleID = roleRes.rows[0].id;
 
-    const managerChoices = await getManagerChoices();
+    const managerChoices = await getEmployeeChoices();
 
     const managerChosen = await inquirer.prompt([
         {
@@ -326,6 +346,21 @@ async function addEmployee(){
 
     await client.query(employeeQuery,[firstName, lastName, roleID, managerID]);
 
+}
+
+async function getRoleID(){
+    try{
+
+        const res = await client.query('SELECT id, title FROM role');
+        return res.rows.map(row =>({
+            name: row.title,
+            value: row.id
+        }));
+
+    }
+    catch(err){
+        console.error(err);
+    }
 }
 
 async function main(){
