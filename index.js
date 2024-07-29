@@ -1,5 +1,6 @@
 const inquirer = require('inquirer');
 const { Client } = require('pg');
+const readline = require('readline');
 
 const client = new Client({
     user: 'postgres',
@@ -103,10 +104,62 @@ async function userInput(){
 
                 break;
             case 'add a department':
-                console.log('add a department chosen');
+                
+                const addNewDepartment = await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'departmentName',
+                        message: 'Enter the new department name: '
+                    }
+                ]);
+
+                const {departmentName} = addNewDepartment;
+
+                const query = 'INSERT INTO departments (name) VALUES ($1) RETURNING *';
+                const res = await client.query(query,[departmentName]);
+                console.log('New department added: ', res.rows[0]);
+
                 break;
             case 'add a role':
-                console.log('add a role chosen');
+                
+            const newRole = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'roleName',
+                    message: 'Enter the new role name: '
+                }
+            ]);
+
+            const {roleName} = newRole;
+
+            const newSalary = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'salaryValue',
+                    message: 'Enter the salary: '
+                }
+            ]);
+
+            const {salaryValue} = newSalary;
+
+            const currentDepartments = await getDepartments();
+
+            const chosenDepartment = await departmentPromt(currentDepartments);
+
+            console.log(chosenDepartment.newDepartment);
+
+            const departmentQuery = 'SELECT id FROM departments WHERE name = $1';
+            const departmentRes = await client.query(departmentQuery,[chosenDepartment.newDepartment]);
+
+            const departmentID = departmentRes.rows[0].id;
+
+            const roleQuery = 'INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3) RETURNING *';
+
+            const roleRes = await client.query(roleQuery, [roleName, salaryValue, departmentID]);
+
+            console.log('role added');
+
+
                 break;
             case 'add an employee':
                 console.log('add an employee chosen');
@@ -129,6 +182,89 @@ async function userInput(){
 
 }
 
+async function getDepartments(){
+
+    try{
+        const res = await client.query('SELECT name FROM departments');
+        return res.rows.map(row => row.name);
+
+    }
+    catch(err){
+        console.error(err);
+    }
+
+}
+
+async function getRoles(){
+    try{
+        const res = await client.query('SELECT title FROM role');
+        return res.rows.map(row => row.map);
+    }
+    catch(err){
+        console.error(err);
+    }
+
+}
+
+async function getEmployees(){
+    try{
+
+        const res = await client.query('SELECT first_name, last_name FROM employee');
+
+        return res.rows.map(row => `${row.first_name} ${row.last_name}`);
+
+    }
+    catch(err){
+        console.error(err);
+    }
+    
+
+
+}
+
+async function employeePromt(employeeNames){
+    const questions = [
+        {
+            type: 'list',
+            name: 'employee',
+            message: 'Select an employee',
+            choices: employeeNames
+        }
+    ];
+
+    const answers = await inquirer.prompt(questions);
+}
+
+async function rolePromt(roleNames){
+    const questions = [
+        {
+            type: 'list',
+            name: 'employee',
+            message: 'Select an employee',
+            choices: roleNames
+        }
+    ];
+
+    const answers = await inquirer.prompt(questions);
+}
+
+async function departmentPromt(departmentNames){
+    const questions = [
+        {
+            type: 'list',
+            name: 'newDepartment',
+            message: 'Select a department: ',
+            choices: departmentNames
+        }
+    ];
+
+    return await inquirer.prompt(questions);
+
+}
+
+async function addNewRole(){
+    
+}
 async function main(){
     try{
         await client.connect();
