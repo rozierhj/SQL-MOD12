@@ -65,6 +65,7 @@ async function menu(){
 
                 const {departmentName} = addNewDepartment;
 
+                //query adds a row in the departments table with a name value
                 const query = 'INSERT INTO departments (name) VALUES ($1) RETURNING *';
                 const res = await client.query(query,[departmentName]);
                 console.log('New department added: ', res.rows[0]);
@@ -134,15 +135,24 @@ async function displayEmployees(){
 }
 
 //function gets list of all employees currently in database (first name last name)
-async function getEmployeeChoices(){
+async function getEmployeeChoices(forManager){
     try{
 
         //query get employee id, first name and last name from the employee table
         const res = await client.query('SELECT id, first_name, last_name FROM employee');
-        return res.rows.map(row =>({
+        const managerChoices =  res.rows.map(row =>({
             name: `${row.first_name} ${row.last_name}`,
             value: row.id
         }));
+
+        //choice added if we are getting employees for manager choice
+        if(forManager === true){
+            managerChoices.unshift({name:"No Manager",value:null});
+            return managerChoices;
+        }
+        else{
+            return managerChoices;
+        }
 
     }
     catch(err){
@@ -176,7 +186,7 @@ async function addEmployee(){
 
     const roleID = roleRes.rows[0].id;
 
-    const managerChoices = await getEmployeeChoices();
+    const managerChoices = await getEmployeeChoices(true);
 
     const managerChosen = await inquirer.prompt([
         {
@@ -189,7 +199,7 @@ async function addEmployee(){
 
     const {managerID} = managerChosen;
 
-    //query adds employe fisrt name, last name, role id and manager id into the employee table
+    //query adds row with employe fisrt name, last name, role id and manager id into the employee table
     const employeeQuery = 'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4) RETURNING *';
 
     await client.query(employeeQuery,[firstName, lastName, roleID, managerID]);
@@ -201,7 +211,7 @@ async function updateEmployeeRole(){
 
     console.log('update an employee role chosen');
 
-    const employeeChoices = await getEmployeeChoices();
+    const employeeChoices = await getEmployeeChoices(false);
 
     const employeeChosen = await inquirer.prompt([
         {

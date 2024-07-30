@@ -29,6 +29,8 @@ async function createDatabase(){
 
         await client.query(`CREATE DATABASE ${dbName}`);
 
+        console.log('database business_db created');
+
     }catch(err){
         console.error(err);
     }
@@ -52,6 +54,8 @@ async function createTables(){
         await dbClient.connect();
 
         await dbClient.query(dbTables);
+
+        console.log('db tables created');
 
     }
     catch(err){
